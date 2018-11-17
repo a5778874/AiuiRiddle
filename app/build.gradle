@@ -11,6 +11,13 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -24,6 +31,9 @@ dependencies {
 //    implementation ('me.yuqirong:cardswipelayout:1.0.0'){
 //        exclude group: 'com.android.support'
 //    }
+    implementation files('libs/Sunflower.jar')
+    implementation files('libs/Msc.jar')
+    implementation 'com.github.tbruyelle:rxpermissions:0.10.2'
     implementation ('com.alibaba.android:ultraviewpager:1.0.7.7@aar') {
         transitive = true
         exclude group: 'com.android.support'

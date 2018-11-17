@@ -1,6 +1,8 @@
-package com.example.zzh.aiuiriddle;
+package com.example.zzh.aiuiriddle.entity;
 
-public class RiddleBean {
+import java.io.Serializable;
+
+public class RiddleBean implements Serializable{
     private String leftLine;  //上联
     private String rightLine;  //下联
     private String tips;        //提示
