@@ -27,6 +27,12 @@ import java.io.Serializable;
 
 public class PagerFragment extends Fragment {
 
+    private RiddleBean riddleBean;
+    private TextView tv_tip_text;
+    private TextView tv_text;
+    private TextView tv_tip;
+
+
     public static PagerFragment newInstance(RiddleBean riddleBean) {
 
         Bundle args = new Bundle();
@@ -45,75 +51,88 @@ public class PagerFragment extends Fragment {
         return view;
     }
 
-    RiddleBean riddleBean;
-    private void init(View root){
+
+
+
+    private void init(View root) {
         riddleBean = (RiddleBean) getArguments().getSerializable("riddleBean");
-        TextView tv_tip_text = root.findViewById(R.id.tv_tip_text);
-        TextView tv_text = root.findViewById(R.id.tv_text);
-        Button bt = root.findViewById(R.id.bt_startAnswer);
+        tv_tip_text = root.findViewById(R.id.tv_tip_text);
+        tv_tip = root.findViewById(R.id.tv_tip);
+        tv_text = root.findViewById(R.id.tv_text);
+        tv_text.setText(riddleBean.getLeftLine());
+        tv_tip_text.setText(riddleBean.getTips());
+        setTextVisible(false);
+        final Button bt = root.findViewById(R.id.bt_startAnswer);
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                IseUtils.getInstance(getContext()).startIseEvaluating(riddleBean.getRightLine(), new EvaluatorListener() {
-                    @Override
-                    public void onVolumeChanged(int i, byte[] bytes) {
-
-                    }
-
-                    @Override
-                    public void onBeginOfSpeech() {
-                        ToastUtils.getInstance(getContext().getApplicationContext()).showShortToast("检测到开始回答..");
-
-                    }
-
-                    @Override
-                    public void onEndOfSpeech() {
-                        ToastUtils.getInstance(getContext().getApplicationContext()).showShortToast("检测到结束回答..");
-                    }
-
-                    @Override
-                    public void onResult(EvaluatorResult evaluatorResult, boolean isLast) {
-
-                        if (isLast) {
-                            String resultStr = evaluatorResult.getResultString();
-                            Log.d("TAG", "onResult: " + resultStr);
-                            if (!TextUtils.isEmpty(resultStr)) {
-                                XmlResultParser resultParser = new XmlResultParser();
-                                Result result = resultParser.parse(resultStr);
-                                if (result.total_score>3.5){
-                                    ToastUtils.getInstance(getContext()).showShortToast("回答正确："+result.total_score);
-                                    TTSUtils.getInstance(getContext()).startSpeak("回答正确",null);
-                                }else {
-                                    ToastUtils.getInstance(getContext()).showShortToast("回答错误："+result.total_score);
-                                    TTSUtils.getInstance(getContext()).startSpeak("回答错误",null);
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onError(SpeechError speechError) {
-
-                    }
-
-                    @Override
-                    public void onEvent(int i, int i1, int i2, Bundle bundle) {
-
-                    }
-                });
+                bt.setClickable(false);
+                ((MainActivity) getActivity()).startCountDown();
+                setTextVisible(true);
+                TTSUtils.getInstance(getContext()).startSpeak(riddleBean.getLeftLine(), null);
+                IseUtils.getInstance(getContext()).startIseEvaluating(riddleBean.getRightLine(), new myEvaluatorListener());
             }
         });
-
-        tv_text.setText(riddleBean.getLeftLine());
-        Log.d("TAG", "riddleBean.getLeftLine(): "+riddleBean.getLeftLine());
-        tv_tip_text.setText(riddleBean.getTips());
-
     }
 
-    public void tts(){
+    private void setTextVisible(boolean b) {
+        if (tv_text==null||tv_tip_text==null||tv_tip==null) return;
+        int visible = b ? View.VISIBLE : View.INVISIBLE;
+        tv_tip_text.setVisibility(visible);
+        tv_text.setVisibility(visible);
+        tv_tip.setVisibility(visible);
+    }
+
+    public void speak() {
         if (riddleBean != null)
-        TTSUtils.getInstance(getContext()).startSpeak(riddleBean.getLeftLine(),null);
+            TTSUtils.getInstance(getContext()).startSpeak(riddleBean.getLeftLine(), null);
     }
 
+    //评测回调
+    class  myEvaluatorListener implements EvaluatorListener{
 
+        @Override
+        public void onVolumeChanged(int i, byte[] bytes) {
+
+        }
+
+        @Override
+        public void onBeginOfSpeech() {
+            ToastUtils.getInstance(getContext().getApplicationContext()).showShortToast("检测到开始回答..");
+        }
+
+        @Override
+        public void onEndOfSpeech() {
+            ToastUtils.getInstance(getContext().getApplicationContext()).showShortToast("检测到结束回答..");
+        }
+
+        @Override
+        public void onResult(EvaluatorResult evaluatorResult, boolean isLast) {
+            if (isLast) {
+                String resultStr = evaluatorResult.getResultString();
+                Log.d("TAG", "onResult: " + resultStr);
+                if (!TextUtils.isEmpty(resultStr)) {
+                    XmlResultParser resultParser = new XmlResultParser();
+                    Result result = resultParser.parse(resultStr);
+                    if (result.total_score > 3.5) {
+                        ToastUtils.getInstance(getContext()).showShortToast("回答正确：" + result.total_score);
+                        TTSUtils.getInstance(getContext()).startSpeak("回答正确", null);
+                    } else {
+                        ToastUtils.getInstance(getContext()).showShortToast("回答错误：" + result.total_score);
+                        TTSUtils.getInstance(getContext()).startSpeak("回答错误", null);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onError(SpeechError speechError) {
+
+        }
+
+        @Override
+        public void onEvent(int i, int i1, int i2, Bundle bundle) {
+
+        }
+    }
 }

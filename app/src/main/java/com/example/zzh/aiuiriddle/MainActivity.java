@@ -3,6 +3,7 @@ package com.example.zzh.aiuiriddle;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
@@ -15,6 +16,7 @@ import com.example.zzh.aiuiriddle.adapter.MyPagerAdapter;
 import com.example.zzh.aiuiriddle.aiui.IseUtils;
 import com.example.zzh.aiuiriddle.aiui.TTSUtils;
 import com.example.zzh.aiuiriddle.entity.RiddleBean;
+import com.example.zzh.aiuiriddle.utils.ToastUtils;
 import com.tbruyelle.rxpermissions2.Permission;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.tmall.ultraviewpager.UltraViewPager;
@@ -24,16 +26,18 @@ import java.util.List;
 
 import io.reactivex.functions.Consumer;
 
-public class MainActivity extends BaseAcitivity{
+public class MainActivity extends BaseAcitivity {
     private TextView tv_countdown;
+    private CountDownTimer countDownTimer;
     private UltraViewPager ultraViewPager;
     private MyPagerAdapter pagerAdapter;
     private UltraViewPager.Orientation gravity_indicator;
-    private List<RiddleBean> riddleLists=new ArrayList<>();
+    private List<RiddleBean> riddleLists = new ArrayList<>();
     private int curpos = 0;
 
-    private  FragmentAdapter fragmentAdapter;
-    private List<Fragment> fragments= new ArrayList<>();;
+    private FragmentAdapter fragmentAdapter;
+    private List<Fragment> fragments = new ArrayList<>();
+    ;
 
     private static final String[] poetrys = new String[]{
             "千岩瀑布经霜卷,一洞梅花带雪香-《游萝峰竭前贤宋大夫》 [清] 区丕烈",
@@ -55,17 +59,17 @@ public class MainActivity extends BaseAcitivity{
 
     private void initDatas() {
 
-        for (int i=0;i<poetrys.length;i++){
+        for (int i = 0; i < poetrys.length; i++) {
             String[] split = poetrys[i].split("-");
-            String tips=split[1];
+            String tips = split[1];
 
             String[] textSplit = split[0].split(",");
-            String leftLine=textSplit[0];
-            String rightLine=textSplit[1];
+            String leftLine = textSplit[0];
+            String rightLine = textSplit[1];
 
-            Log.d("TAG", "riddle: "+leftLine+","+rightLine+"-"+tips);
-           // riddleLists.add();
-            fragments.add(PagerFragment.newInstance(new RiddleBean(leftLine,rightLine,tips)));
+            Log.d("TAG", "riddle: " + leftLine + "," + rightLine + "-" + tips);
+            // riddleLists.add();
+            fragments.add(PagerFragment.newInstance(new RiddleBean(leftLine, rightLine, tips)));
         }
 
         fragmentAdapter = new FragmentAdapter(getSupportFragmentManager(), fragments);
@@ -73,10 +77,25 @@ public class MainActivity extends BaseAcitivity{
     }
 
     private void initView() {
-        tv_countdown=findViewById(R.id.tv_countdown);
-        ultraViewPager=findViewById(R.id.ultra_viewpager);
+        tv_countdown = findViewById(R.id.tv_countdown);
+        //倒计时
+        countDownTimer = new CountDownTimer(10000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tv_countdown.setText((millisUntilFinished / 1000) + "");
+            }
+
+            @Override
+            public void onFinish() {
+                tv_countdown.setText("0");
+                ToastUtils.getInstance(getApplicationContext()).showShortToast("回答超时");
+                IseUtils.getInstance(MainActivity.this).cancelEvaluating();
+            }
+        };
+
+        ultraViewPager = findViewById(R.id.ultra_viewpager);
         ultraViewPager.setScrollMode(UltraViewPager.ScrollMode.HORIZONTAL);
-        pagerAdapter = new MyPagerAdapter(MainActivity.this,riddleLists);
+        pagerAdapter = new MyPagerAdapter(MainActivity.this, riddleLists);
         ultraViewPager.setAdapter(fragmentAdapter);
         ultraViewPager.setInfiniteRatio(100);
         ultraViewPager.setInfiniteLoop(true);
@@ -85,18 +104,15 @@ public class MainActivity extends BaseAcitivity{
         ultraViewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-               // Log.d("TAG", "onPageScrolled: "+position+"...."+positionOffsetPixels);
+                // Log.d("TAG", "onPageScrolled: "+position+"...."+positionOffsetPixels);
 
             }
 
             @Override
             public void onPageSelected(int position) {
-                //Log.d("TAG", "onPageSelected: "+position);
                 if (fragments != null) {
                     curpos = position % fragments.size();
-
-
-                    ((PagerFragment) fragments.get(curpos)).tts();
+                    //((PagerFragment) fragments.get(curpos)).speak();
                 }
 
 
@@ -104,20 +120,34 @@ public class MainActivity extends BaseAcitivity{
 
             @Override
             public void onPageScrollStateChanged(int state) {
-             //  Log.d("TAG", "onPageScrollStateChanged: "+state);
+                //  Log.d("TAG", "onPageScrollStateChanged: "+state);
             }
         });
 
         curpos = 400 % fragments.size();
         ultraViewPager.setCurrentItem(400);
-        ultraViewPager.post(new Runnable() {
-            @Override
-            public void run() {
-                ((PagerFragment) fragments.get(curpos)).tts();
-            }
-        });
+//        ultraViewPager.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                ((PagerFragment) fragments.get(curpos)).speak();
+//            }
+//        });
 
     }
+
+    //开始计时
+    public void startCountDown() {
+        if (countDownTimer != null)
+            countDownTimer.start();
+    }
+
+    //计时取消
+    public void cancelCountDown() {
+        if (countDownTimer != null)
+            countDownTimer.cancel();
+
+    }
+
 
     //换一题
     public void changeNext(View view) {
